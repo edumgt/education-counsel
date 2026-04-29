@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.git
+.github
+DATA_ROOT/
+data/
+qdrant_data/
+*.log
+.dockerignore

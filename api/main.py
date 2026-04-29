@@ -17,11 +17,17 @@ load_dotenv()
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "intfloat/multilingual-e5-small")
 
-LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "none").lower()  # none | ollama | openai
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "none").lower()  # none | ollama | openai | azure_openai
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.1")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+
+# Azure OpenAI
+AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_DEPLOYMENT = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini")
+AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-01")
 
 app = FastAPI(title="Career Counseling Chatbot API", version="1.0.0")
 
@@ -131,6 +137,30 @@ def call_openai(prompt: str) -> str:
     return (resp.choices[0].message.content or "").strip()
 
 
+def call_azure_openai(prompt: str) -> str:
+    import openai  # type: ignore
+
+    if not AZURE_OPENAI_ENDPOINT:
+        raise RuntimeError("AZURE_OPENAI_ENDPOINT is not set")
+    if not AZURE_OPENAI_API_KEY:
+        raise RuntimeError("AZURE_OPENAI_API_KEY is not set")
+
+    client_az = openai.AzureOpenAI(
+        azure_endpoint=AZURE_OPENAI_ENDPOINT,
+        api_key=AZURE_OPENAI_API_KEY,
+        api_version=AZURE_OPENAI_API_VERSION,
+    )
+    resp = client_az.chat.completions.create(
+        model=AZURE_OPENAI_DEPLOYMENT,
+        messages=[
+            {"role": "system", "content": "You are a student career counseling assistant. Use only provided evidence."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.2,
+    )
+    return (resp.choices[0].message.content or "").strip()
+
+
 def fallback_answer(question: str, hits: List[Dict[str, Any]]) -> str:
     lines = ["(LLM 미설정) 데이터 기반 상담 참고 내용을 제공합니다.", f"질문: {question}", ""]
     lines.append("핵심 근거:")
@@ -172,6 +202,8 @@ def run_chat(message: str, domain: Optional[str], top_k: int, history: List[Dict
         answer = call_ollama(prompt)
     elif LLM_PROVIDER == "openai":
         answer = call_openai(prompt)
+    elif LLM_PROVIDER == "azure_openai":
+        answer = call_azure_openai(prompt)
     else:
         answer = fallback_answer(message, hits)
 
@@ -196,6 +228,7 @@ def healthz():
         "qdrant": QDRANT_URL,
         "embed_model": EMBED_MODEL,
         "llm_provider": LLM_PROVIDER,
+        "azure_openai_endpoint": AZURE_OPENAI_ENDPOINT or "(not set)",
         "service": "student-career-counsel-chatbot",
     }
 
