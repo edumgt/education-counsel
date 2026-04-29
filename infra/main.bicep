@@ -33,6 +33,9 @@ param openAIApiKey string = ''
 @secure()
 param azureOpenAIApiKey string = ''
 
+@description('CORS 허용 오리진 목록. 빈 배열이면 API 자체 오리진만 허용. 프로덕션에서는 실제 도메인을 지정하세요.')
+param corsAllowedOrigins array = []
+
 // ─── 명명 규칙 ───────────────────────────────────────────────
 var prefix = 'aicounsel'
 var suffix = uniqueString(resourceGroup().id)
@@ -214,9 +217,9 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8000
         transport: 'http'
         corsPolicy: {
-          allowedOrigins: ['*']
+          allowedOrigins: empty(corsAllowedOrigins) ? ['https://${apiAppName}.${containerAppsEnv.properties.defaultDomain}'] : corsAllowedOrigins
           allowedMethods: ['GET', 'POST', 'OPTIONS']
-          allowedHeaders: ['*']
+          allowedHeaders: ['Content-Type', 'Authorization']
         }
       }
       registries: [
