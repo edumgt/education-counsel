@@ -4,45 +4,275 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>학생 진로탐색 AI 상담 챗봇</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+          boxShadow: {
+            panel: '0 24px 70px rgba(15, 23, 42, 0.16)',
+          },
+        },
+      },
+    };
+  </script>
 </head>
-<body class="bg-slate-100 text-slate-900">
-  <div class="mx-auto max-w-6xl p-4 md:p-8">
-    <header class="mb-4 rounded-2xl bg-white p-4 shadow-sm border border-slate-200">
-      <h1 class="text-xl md:text-2xl font-bold">학생 진로탐색 AI 상담 챗봇</h1>
-      <p class="text-sm text-slate-600 mt-1">DATA_ROOT 학습데이터 기반 RAG + LLM 상담 시스템</p>
-    </header>
-
-    <section class="grid gap-4 md:grid-cols-12">
-      <aside class="md:col-span-4 rounded-2xl bg-white p-4 shadow-sm border border-slate-200">
-        <h2 class="font-semibold">상담 설정</h2>
-        <label class="text-sm block mt-4">도메인(학교급/카테고리)</label>
-        <input id="domain" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="예: 01. 학교급 / 03. 고등" />
-
-        <label class="text-sm block mt-3">API Base URL</label>
-        <input id="apiBase" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="기본: 현재 Origin" />
-
-        <button id="saveConfig" class="mt-3 w-full rounded-xl bg-slate-900 text-white py-2 text-sm">설정 저장</button>
-
-        <div class="mt-5">
-          <h3 class="font-semibold text-sm">빠른 질문</h3>
-          <div class="mt-2 space-y-2" id="quickQuestions"></div>
+<body class="min-h-screen bg-[linear-gradient(180deg,#f4f7fb_0%,#eef3fb_100%)] font-sans text-slate-900">
+  <div class="flex min-h-screen">
+    <aside class="hidden w-[320px] shrink-0 border-r border-slate-200 bg-slate-950 text-white xl:flex xl:flex-col">
+      <div class="flex items-center gap-4 border-b border-white/10 px-6 py-6">
+        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-500 text-xl text-white">
+          <i class="fa-solid fa-seedling"></i>
         </div>
-      </aside>
+        <div>
+          <div class="text-xl font-black tracking-[-0.03em]">학생 진로탐색</div>
+          <div class="mt-1 text-sm text-slate-400">RAG 상담 웹앱</div>
+        </div>
+      </div>
 
-      <main class="md:col-span-8 rounded-2xl bg-white shadow-sm border border-slate-200 flex flex-col h-[72vh]">
-        <div id="chatLog" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 rounded-t-2xl"></div>
+      <div class="border-b border-white/10 px-6 py-5">
+        <button id="newChatScreen" class="inline-flex w-full items-center justify-center rounded-2xl bg-sky-500 px-4 py-4 text-lg font-bold text-white transition hover:bg-sky-400">
+          <i class="fa-solid fa-plus mr-3"></i>상담 화면으로
+        </button>
+      </div>
 
-        <div class="border-t border-slate-200 p-3">
-          <div id="status" class="hidden mb-2 text-sm rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700"></div>
-          <div class="flex gap-2">
-            <input id="message" class="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="학생 상황/고민을 입력하세요..." />
-            <button id="send" class="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm">전송</button>
+      <nav id="desktopSidebarMenu" class="flex-1 space-y-2 overflow-y-auto px-4 py-5"></nav>
+
+      <div class="border-t border-white/10 px-5 py-5">
+        <button id="openConfigDesktop" class="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-left transition hover:bg-white/10">
+          <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-sky-300">
+            <i class="fa-solid fa-sliders"></i>
+          </span>
+          <span>
+            <span class="block text-base font-bold">상담 설정</span>
+            <span class="mt-1 block text-sm text-slate-400">도메인과 API 주소 관리</span>
+          </span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="flex min-w-0 flex-1 flex-col">
+      <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div class="flex items-center justify-between gap-4 px-4 py-4 md:px-6 xl:px-8">
+          <div class="flex min-w-0 items-center gap-3">
+            <button id="openMobileSidebar" class="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 xl:hidden">
+              <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="min-w-0">
+              <div class="text-xs font-bold uppercase tracking-[0.22em] text-sky-700">Workspace</div>
+              <h1 id="screenTitle" class="truncate text-2xl font-black tracking-[-0.04em] text-slate-950 md:text-3xl">학생 진로탐색 상담</h1>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="openQuickPrompt" class="inline-flex items-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-bold text-sky-900 transition hover:bg-sky-100">
+              <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>빠른 질문
+            </button>
+            <button id="openConfigHeader" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50">
+              <i class="fa-solid fa-sliders mr-2"></i>설정
+            </button>
           </div>
         </div>
+      </header>
+
+      <main class="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 xl:px-8 xl:py-6">
+        <section data-screen="chat" class="screen-view space-y-5">
+          <div class="rounded-[32px] bg-[linear-gradient(135deg,#0f172a_0%,#0f2d54_60%,#0369a1_100%)] px-6 py-7 text-white shadow-panel md:px-8 md:py-8">
+            <div class="max-w-4xl">
+              <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-sky-100">
+                <i class="fa-solid fa-comments"></i>상담 메인 화면
+              </div>
+              <h2 class="mt-4 text-3xl font-black tracking-[-0.05em] md:text-5xl md:leading-[1.08]">학생 상황을 입력하면 데이터 근거와 함께 상담 답변을 생성합니다</h2>
+              <p class="mt-4 text-base leading-8 text-slate-200 md:text-xl md:leading-9">chatgpt.com처럼 좌측 메뉴에서 화면을 고르고, 현재 화면에서는 상담 작업에만 집중할 수 있도록 구성했습니다.</p>
+            </div>
+          </div>
+
+          <div class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
+            <section class="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-panel">
+              <div id="chatLog" class="h-[58vh] min-h-[520px] space-y-4 overflow-y-auto bg-slate-50 px-5 py-5 md:px-7 md:py-7"></div>
+              <div class="border-t border-slate-200 bg-white px-5 py-5 md:px-7">
+                <div id="status" class="hidden mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-base font-medium text-amber-800"></div>
+                <div class="flex flex-col gap-3 lg:flex-row">
+                  <input id="message" class="min-h-[68px] flex-1 rounded-[24px] border border-slate-300 px-5 text-lg font-medium tracking-[-0.02em] text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100" placeholder="학생의 흥미, 강점, 고민, 상담 배경을 입력하세요..." />
+                  <button id="send" class="inline-flex min-h-[68px] items-center justify-center rounded-[24px] bg-sky-600 px-8 text-lg font-bold text-white transition hover:bg-sky-700">
+                    <i class="fa-solid fa-paper-plane mr-3"></i>상담 요청
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <aside class="space-y-5">
+              <article class="rounded-[30px] border border-slate-200 bg-white p-6 shadow-panel">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-white">
+                    <i class="fa-solid fa-compass"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-2xl font-black tracking-[-0.04em]">상담 포인트</h3>
+                    <p class="mt-1 text-sm text-slate-500">현재 화면 요약</p>
+                  </div>
+                </div>
+                <div class="mt-5 space-y-3 text-lg leading-8 text-slate-700">
+                  <p>학생 프로필, 상담 기록, 전문가 라벨 데이터를 함께 검색합니다.</p>
+                  <p>답변 아래에는 citation 근거가 카드 형태로 함께 표시됩니다.</p>
+                </div>
+              </article>
+
+              <article class="rounded-[30px] border border-slate-200 bg-white p-6 shadow-panel">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-600 text-white">
+                    <i class="fa-solid fa-bolt"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-2xl font-black tracking-[-0.04em]">빠른 시작</h3>
+                    <p class="mt-1 text-sm text-slate-500">질문 템플릿 사용</p>
+                  </div>
+                </div>
+                <button id="openQuickPromptCard" class="mt-5 inline-flex w-full items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-lg font-bold text-sky-900 transition hover:bg-sky-100">
+                  <i class="fa-solid fa-wand-magic-sparkles mr-3"></i>빠른 질문 열기
+                </button>
+              </article>
+            </aside>
+          </div>
+        </section>
+
+        <section data-screen="implementation" class="screen-view hidden space-y-5">
+          <div class="rounded-[32px] border border-slate-200 bg-white px-6 py-7 shadow-panel md:px-8">
+            <div class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-900">
+              <i class="fa-solid fa-magnifying-glass-chart"></i>구현 확인
+            </div>
+            <h2 class="mt-4 text-3xl font-black tracking-[-0.05em] md:text-5xl">실제 ingest 구현이 어디에 있는지 코드 기준으로 확인합니다</h2>
+            <p class="mt-4 max-w-4xl text-lg leading-8 text-slate-600 md:text-xl md:leading-9">README 설명이 아니라 현재 저장소 내부의 실제 스크립트와 API 구현을 기준으로 ingest와 파이프라인 존재 여부를 보여주는 화면입니다.</p>
+          </div>
+          <div id="implementationChecks" class="grid gap-5 xl:grid-cols-3"></div>
+        </section>
+
+        <section data-screen="pipeline" class="screen-view hidden space-y-5">
+          <div class="rounded-[32px] border border-slate-200 bg-white px-6 py-7 shadow-panel md:px-8">
+            <div class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900">
+              <i class="fa-solid fa-diagram-project"></i>파이프라인 설명
+            </div>
+            <h2 class="mt-4 text-3xl font-black tracking-[-0.05em] md:text-5xl">Ingest와 Pipeline을 화면 단위로 분리해 설명합니다</h2>
+            <p class="mt-4 max-w-4xl text-lg leading-8 text-slate-600 md:text-xl md:leading-9">이 화면에서는 데이터 유입 단계와 전체 처리 흐름의 차이를 큰 한글 중심 카드로 보여줍니다.</p>
+          </div>
+          <div class="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            <div id="pipelineSummary" class="grid gap-4"></div>
+            <article class="rounded-[30px] bg-slate-950 p-6 text-white shadow-panel">
+              <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-sky-300">
+                <i class="fa-solid fa-wave-square"></i>동작 순서
+              </div>
+              <h3 class="mt-4 text-3xl font-black tracking-[-0.04em]">현재 앱 처리 경로</h3>
+              <div class="mt-6 grid gap-3 text-lg leading-8">
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">1. DATA_ROOT JSON 수집</div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">2. JSONL 정규화</div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">3. 청크 분할 및 임베딩</div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">4. Qdrant 적재</div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">5. 질문 검색 및 프롬프트 구성</div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">6. 상담 답변과 citation 반환</div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section data-screen="flow" class="screen-view hidden space-y-5">
+          <div class="rounded-[32px] border border-slate-200 bg-white px-6 py-7 shadow-panel md:px-8">
+            <div class="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-900">
+              <i class="fa-solid fa-code-branch"></i>구현 과정 예시
+            </div>
+            <h2 class="mt-4 text-3xl font-black tracking-[-0.05em] md:text-5xl">원천 데이터가 상담 답변까지 가는 과정을 단계별 화면으로 봅니다</h2>
+            <p class="mt-4 max-w-4xl text-lg leading-8 text-slate-600 md:text-xl md:leading-9">이 화면은 실제 파일 경로, 입출력, 코드 스케치를 묶어 구현 흐름을 하나씩 따라가도록 구성했습니다.</p>
+          </div>
+          <div id="pipelineFlow" class="grid gap-5"></div>
+        </section>
+
+        <section data-screen="examples" class="screen-view hidden space-y-5">
+          <div class="rounded-[32px] border border-slate-200 bg-white px-6 py-7 shadow-panel md:px-8">
+            <div class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-900">
+              <i class="fa-solid fa-flask-vial"></i>실행 예시
+            </div>
+            <h2 class="mt-4 text-3xl font-black tracking-[-0.05em] md:text-5xl">명령과 산출물 예시를 메뉴 하나의 화면으로 분리했습니다</h2>
+            <p class="mt-4 max-w-4xl text-lg leading-8 text-slate-600 md:text-xl md:leading-9">처음 ingest를 돌릴 때 사용할 명령, 정규화 문서 예시, 벡터 payload, 웹앱 API 요청 포맷을 모아 보여줍니다.</p>
+          </div>
+          <div id="implementationExamples" class="grid gap-5 xl:grid-cols-2"></div>
+        </section>
       </main>
-    </section>
+    </div>
   </div>
+
+  <div id="sidebarBackdrop" class="pointer-events-none fixed inset-0 z-40 bg-slate-950/45 opacity-0 transition duration-300 xl:hidden"></div>
+  <aside id="mobileSidebar" class="pointer-events-none fixed inset-y-0 left-0 z-50 flex w-full max-w-[320px] -translate-x-full flex-col border-r border-white/10 bg-slate-950 text-white transition duration-300 xl:hidden">
+    <div class="flex items-center justify-between border-b border-white/10 px-5 py-5">
+      <div class="flex items-center gap-3">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500 text-white">
+          <i class="fa-solid fa-seedling"></i>
+        </div>
+        <div>
+          <div class="text-lg font-black">학생 진로탐색</div>
+          <div class="text-sm text-slate-400">RAG 상담</div>
+        </div>
+      </div>
+      <button id="closeMobileSidebar" class="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="border-b border-white/10 px-5 py-4">
+      <button id="newChatScreenMobile" class="inline-flex w-full items-center justify-center rounded-2xl bg-sky-500 px-4 py-4 text-lg font-bold text-white">
+        <i class="fa-solid fa-plus mr-3"></i>상담 화면으로
+      </button>
+    </div>
+    <nav id="mobileSidebarMenu" class="flex-1 space-y-2 overflow-y-auto px-4 py-5"></nav>
+  </aside>
+
+  <div id="panelBackdrop" class="pointer-events-none fixed inset-0 z-40 bg-slate-950/40 opacity-0 transition duration-300"></div>
+
+  <aside id="configPanel" class="pointer-events-none fixed inset-y-0 right-0 z-50 w-full max-w-[480px] translate-x-full border-l border-slate-200 bg-white transition duration-300">
+    <div class="flex h-full flex-col">
+      <div class="flex items-start justify-between border-b border-slate-200 px-5 py-5">
+        <div>
+          <div class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-700">Settings</div>
+          <h2 class="mt-2 text-3xl font-black tracking-[-0.04em]">상담 설정</h2>
+          <p class="mt-2 text-base leading-7 text-slate-600">도메인과 API 주소를 설정하는 별도 패널입니다.</p>
+        </div>
+        <button data-close-panel class="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="flex-1 space-y-5 overflow-y-auto px-5 py-6">
+        <div class="rounded-[28px] border border-slate-200 bg-slate-50 p-5">
+          <label class="text-sm font-bold text-slate-600">도메인(학교급/카테고리)</label>
+          <input id="domain" class="mt-3 min-h-[60px] w-full rounded-[22px] border border-slate-300 bg-white px-5 text-lg font-medium text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="예: 01. 학교급 / 03. 고등" />
+        </div>
+        <div class="rounded-[28px] border border-slate-200 bg-slate-50 p-5">
+          <label class="text-sm font-bold text-slate-600">API Base URL</label>
+          <input id="apiBase" class="mt-3 min-h-[60px] w-full rounded-[22px] border border-slate-300 bg-white px-5 text-lg font-medium text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" placeholder="기본: 현재 Origin" />
+        </div>
+        <button id="saveConfig" class="inline-flex min-h-[64px] w-full items-center justify-center rounded-[22px] bg-emerald-600 px-5 text-lg font-bold text-white transition hover:bg-emerald-700">
+          <i class="fa-solid fa-floppy-disk mr-3"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <aside id="promptPanel" class="pointer-events-none fixed inset-y-0 right-0 z-50 w-full max-w-[480px] translate-x-full border-l border-slate-200 bg-white transition duration-300">
+    <div class="flex h-full flex-col">
+      <div class="flex items-start justify-between border-b border-slate-200 px-5 py-5">
+        <div>
+          <div class="text-xs font-bold uppercase tracking-[0.22em] text-sky-700">Quick Prompt</div>
+          <h2 class="mt-2 text-3xl font-black tracking-[-0.04em]">빠른 질문</h2>
+          <p class="mt-2 text-base leading-7 text-slate-600">질문 템플릿을 고르면 상담 화면으로 이동하고 입력창에 바로 채워집니다.</p>
+        </div>
+        <button data-close-panel class="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="quickQuestions" class="flex-1 space-y-3 overflow-y-auto px-5 py-6"></div>
+    </div>
+  </aside>
 
   <script src="./app.js"></script>
 </body>
