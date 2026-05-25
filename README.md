@@ -1,3 +1,5 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
 # AI 기반 학생 진로탐색 상담 시스템 (Chatbot RAG)
 
 
@@ -414,9 +416,9 @@ LLM(대형 언어 모델)에서 **Ingest(인제스트)**는 모델이 활용할 
 
 쉽게 말해, LLM에게 특정 문서나 데이터를 주고 **"이 내용 참고해서 답변해 줘"라고 하기 전에, 그 데이터를 LLM이 이해할 수 있는 형태로 집어넣는 단계**입니다. 이 개념은 주로 기업 내부 데이터나 특정 문서와 연동하는 **RAG(Retrieval-Augmented Generation, 검색 증강 생성)** 시스템에서 핵심적으로 다뤄집니다.
 
-### 🛠️ Data Ingestion의 주요 단계
+### <i class="fa-solid fa-screwdriver-wrench"></i> Data Ingestion의 주요 단계
 ```
-[원본 데이터] ➔ [텍스트 추출] ➔ [텍스트 분할 (Chunking)] ➔ [벡터 변환 (Embedding)] ➔ [벡터 DB 저장]
+[원본 데이터] <i class="fa-solid fa-arrow-right"></i> [텍스트 추출] <i class="fa-solid fa-arrow-right"></i> [텍스트 분할 (Chunking)] <i class="fa-solid fa-arrow-right"></i> [벡터 변환 (Embedding)] <i class="fa-solid fa-arrow-right"></i> [벡터 DB 저장]
 ```
 1. **데이터 수집 및 추출 (Load & Extract):** PDF, Word, 웹페이지, SQL 등 다양한 형태의 원본 데이터에서 순수한 텍스트를 추출합니다.
 2. **텍스트 분할 (Chunking):** LLM이 한 번에 읽기 적절한 의미 있는 단위(예: 300~500자 정도의 문단)로 쪼갭니다.
@@ -429,16 +431,16 @@ LLM(대형 언어 모델)에서 **Ingest(인제스트)**는 모델이 활용할 
 
 결론부터 말씀드리면, **Ingest는 파이프라인의 '첫 단추(시작 지점)'**이고, **파이프라인은 Ingest를 포함한 '전체 여정(과정)'**을 의미합니다.
 
-### 🔍 직관적인 비유 (공장의 정수 시스템)
+### <i class="fa-solid fa-magnifying-glass"></i> 직관적인 비유 (공장의 정수 시스템)
 * **Ingest (입구):** 강물이나 지하수를 펌프로 **공장 안으로 끌어들이는 행위 자체**입니다. 어디서, 어떻게 데이터를 가져올 것인가에 초점을 맞춤니다.
-* **Pipeline (전체 배관 시스템):** 물을 끌어와서(Ingest) ➔ 필터로 모래를 걸러내고(Chunking) ➔ 소독을 한 뒤(Embedding) ➔ 깨끗한 물탱크에 저장(Vector DB)하여 소비자가 마실 수 있게 하는 **모든 연결 통로와 자동화 과정**을 뜻합니다.
+* **Pipeline (전체 배관 시스템):** 물을 끌어와서(Ingest) <i class="fa-solid fa-arrow-right"></i> 필터로 모래를 걸러내고(Chunking) <i class="fa-solid fa-arrow-right"></i> 소독을 한 뒤(Embedding) <i class="fa-solid fa-arrow-right"></i> 깨끗한 물탱크에 저장(Vector DB)하여 소비자가 마실 수 있게 하는 **모든 연결 통로와 자동화 과정**을 뜻합니다.
 
-### 📊 비교 요약표
+### <i class="fa-solid fa-chart-bar"></i> 비교 요약표
 
 | 구분 | Ingest (데이터 주입) | Pipeline (파이프라인) |
 | :--- | :--- | :--- |
 | **정의** | 외부 데이터를 시스템 내부로 **들여오는 행위** | 데이터가 이동하고 변환되는 **전체 흐름과 시스템** |
-| **범위** | 데이터 소스 연결 ➔ 데이터 읽기 (전체 공정의 1단계) | Ingest ➔ 가공(Chunking) ➔ 변환(Embedding) ➔ 저장(Vector DB) ➔ 모니터링 |
+| **범위** | 데이터 소스 연결 <i class="fa-solid fa-arrow-right"></i> 데이터 읽기 (전체 공정의 1단계) | Ingest <i class="fa-solid fa-arrow-right"></i> 가공(Chunking) <i class="fa-solid fa-arrow-right"></i> 변환(Embedding) <i class="fa-solid fa-arrow-right"></i> 저장(Vector DB) <i class="fa-solid fa-arrow-right"></i> 모니터링 |
 | **초점** | **"무엇을, 어디서 가져올 것인가?"** | **"데이터를 어떻게 가공하여 최종 목적지까지 자동화되게 보낼 것인가?"** |
 | **LLM 예시** | Notion이나 Slack의 대화 데이터를 API로 긁어오는 단계 | 긁어온 데이터를 쪼개고, 임베딩하여, 벡터 DB에 저장하기까지의 **자동화된 전 과정** |
 
@@ -453,5 +455,5 @@ LLM(대형 언어 모델)에서 **Ingest(인제스트)**는 모델이 활용할 
   * "사용자가 매뉴얼을 새로 업로드할 때마다, 자동으로 텍스트를 추출하고 300자씩 쪼개서 임베딩한 뒤 DB에 업데이트해 주는 **자동화 시스템을 만들어야 해.**"
   * 수집부터 최종 저장까지 데이터가 멈추지 않고 흘러가도록 만드는 전체 파이프라인을 의미합니다.
 
-> 💡 **요약하자면**
+> <i class="fa-solid fa-lightbulb"></i> **요약하자면**
 > **Ingest**는 파이프라인이라는 거대한 고속도로의 **'톨게이트(진입로)'** 역할을 하는 핵심 단계입니다.
