@@ -213,7 +213,8 @@ function setStatus(msg = '') {
     return;
   }
   els.status.classList.remove('hidden');
-  els.status.textContent = msg;
+  const textEl = document.getElementById('statusText');
+  if (textEl) textEl.textContent = msg;
 }
 
 function escapeHtml(s) {
@@ -222,19 +223,15 @@ function escapeHtml(s) {
 
 function tonePill(tone) {
   if (tone === 'emerald') return 'border-emerald-200 bg-emerald-50 text-emerald-700';
-  if (tone === 'sky') return 'border-sky-200 bg-sky-50 text-sky-700';
+  if (tone === 'sky') return 'border-blue-200 bg-blue-50 text-blue-700';
   if (tone === 'violet') return 'border-violet-200 bg-violet-50 text-violet-700';
   if (tone === 'amber') return 'border-amber-200 bg-amber-50 text-amber-700';
-  return 'border-slate-200 bg-slate-50 text-slate-700';
+  return 'border-gray-200 bg-gray-50 text-gray-700';
 }
 
 function sidebarTone(tone, active) {
-  if (active) return 'border-sky-400 bg-sky-500 text-white shadow-lg shadow-sky-950/10';
-  if (tone === 'emerald') return 'border-transparent bg-transparent text-slate-200 hover:bg-white/10';
-  if (tone === 'sky') return 'border-transparent bg-transparent text-slate-200 hover:bg-white/10';
-  if (tone === 'violet') return 'border-transparent bg-transparent text-slate-200 hover:bg-white/10';
-  if (tone === 'amber') return 'border-transparent bg-transparent text-slate-200 hover:bg-white/10';
-  return 'border-transparent bg-transparent text-slate-200 hover:bg-white/10';
+  if (active) return 'sidebar-active font-semibold';
+  return 'text-gray-600 hover:bg-gray-100';
 }
 
 function setScreen(screenId) {
@@ -292,22 +289,31 @@ function closeMobileSidebar() {
 function addBubble(role, text, citations = []) {
   const isUser = role === 'user';
   const wrap = document.createElement('div');
-  wrap.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+  wrap.className = `flex gap-3 fade-in ${isUser ? 'justify-end' : 'justify-start'}`;
 
   const citeHtml = !isUser && citations.length
-    ? `<div class="mt-4 space-y-2">${citations.map((c, i) => `
-      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-        <div class="font-semibold text-slate-900">[${i + 1}] ${escapeHtml(c.domain_name)} · ${escapeHtml(c.source_spec || 'unknown')}</div>
-        <div class="mt-1 leading-6 text-slate-600">${escapeHtml(c.excerpt || '')}</div>
+    ? `<div class="mt-3 space-y-1.5 border-t border-gray-100 pt-3">${citations.map((c, i) => `
+      <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+        <span class="font-semibold text-gray-800">[${i + 1}] ${escapeHtml(c.domain_name)} · ${escapeHtml(c.source_spec || 'unknown')}</span>
+        <div class="mt-0.5 leading-5">${escapeHtml(c.excerpt || '')}</div>
       </div>`).join('')}</div>`
     : '';
 
-  wrap.innerHTML = `
-    <div class="max-w-[92%] rounded-[28px] px-5 py-4 text-base leading-8 shadow-sm md:max-w-[85%] ${isUser ? 'bg-sky-600 text-white' : 'border border-slate-200 bg-white text-slate-900'}">
-      <div class="whitespace-pre-wrap font-medium tracking-[-0.02em]">${escapeHtml(text)}</div>
-      ${citeHtml}
-    </div>
-  `;
+  if (isUser) {
+    wrap.innerHTML = `
+      <div class="max-w-[78%] bubble-user copilot-gradient px-4 py-3 text-sm leading-relaxed text-white shadow-sm">
+        <div class="whitespace-pre-wrap">${escapeHtml(text)}</div>
+      </div>`;
+  } else {
+    wrap.innerHTML = `
+      <div class="w-7 h-7 shrink-0 copilot-gradient rounded-full flex items-center justify-center mt-0.5">
+        <i class="fa-solid fa-seedling text-white text-xs"></i>
+      </div>
+      <div class="max-w-[78%] bubble-assistant border border-gray-200 bg-white px-4 py-3 text-sm leading-relaxed text-gray-900 shadow-sm">
+        <div class="whitespace-pre-wrap">${escapeHtml(text)}</div>
+        ${citeHtml}
+      </div>`;
+  }
   els.chatLog.appendChild(wrap);
   els.chatLog.scrollTop = els.chatLog.scrollHeight;
 }
@@ -353,13 +359,10 @@ function renderSidebarMenus() {
   const menuHtml = sidebarItems.map((item) => {
     const active = item.id === state.currentScreen;
     return `
-      <button class="sidebar-item flex w-full items-center gap-4 rounded-2xl border px-4 py-4 text-left transition ${sidebarTone(item.tone, active)}" data-screen-target="${item.id}">
-        <span class="flex h-12 w-12 items-center justify-center rounded-2xl ${active ? 'bg-white/15 text-white' : 'bg-white/10 text-sky-300'}">
-          <i class="fa-solid ${item.icon}"></i>
-        </span>
-        <span class="min-w-0">
-          <span class="block truncate text-base font-bold tracking-[-0.02em]">${escapeHtml(item.title)}</span>
-          <span class="mt-1 block truncate text-sm ${active ? 'text-sky-100' : 'text-slate-400'}">${escapeHtml(item.desc)}</span>
+      <button class="sidebar-item flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition ${sidebarTone(item.tone, active)}" data-screen-target="${item.id}">
+        <i class="fa-solid ${item.icon} nav-icon w-4 text-center text-sm ${active ? 'text-copilot-600' : 'text-gray-400'}"></i>
+        <span class="min-w-0 flex-1">
+          <span class="block truncate font-medium">${escapeHtml(item.title)}</span>
         </span>
       </button>
     `;
@@ -375,12 +378,11 @@ function renderSidebarMenus() {
 
 function renderQuickQuestions() {
   els.quickQuestions.innerHTML = sampleQuestions.map((q, i) => `
-    <button class="quick-question rounded-[24px] border border-sky-200 bg-sky-50 px-5 py-5 text-left text-sky-950 transition hover:-translate-y-0.5 hover:bg-sky-100" data-question="${escapeHtml(q)}">
-      <div class="flex items-center gap-3 text-base font-bold">
-        <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-sky-600">${i + 1}</span>
-        <span>빠른 질문</span>
+    <button class="quick-question w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-sm transition hover:border-copilot-200 hover:bg-copilot-50" data-question="${escapeHtml(q)}">
+      <div class="flex items-start gap-3">
+        <span class="mt-0.5 w-5 h-5 shrink-0 flex items-center justify-center rounded-full bg-copilot-100 text-copilot-600 text-xs font-bold">${i + 1}</span>
+        <span class="leading-relaxed text-gray-700">${escapeHtml(q)}</span>
       </div>
-      <div class="mt-3 text-lg leading-8 tracking-[-0.02em]">${escapeHtml(q)}</div>
     </button>
   `).join('');
 
@@ -396,22 +398,22 @@ function renderQuickQuestions() {
 
 function renderImplementationChecks() {
   els.implementationChecks.innerHTML = implementationChecks.map((item) => `
-    <article class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-panel">
-      <div class="flex items-start justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-xl text-white">
-            <i class="fa-solid ${item.icon}"></i>
+    <article class="rounded-xl border border-gray-200 bg-white p-5 hover:shadow-md transition-shadow">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 shrink-0 flex items-center justify-center rounded-lg bg-gray-900 text-white">
+            <i class="fa-solid ${item.icon} text-sm"></i>
           </div>
           <div>
-            <h4 class="text-2xl font-black tracking-[-0.03em] text-slate-900">${escapeHtml(item.title)}</h4>
-            <div class="mt-1 text-sm text-slate-500">${escapeHtml(item.path)}</div>
+            <h4 class="text-base font-semibold text-gray-900">${escapeHtml(item.title)}</h4>
+            <div class="text-xs text-gray-400 mt-0.5 font-mono">${escapeHtml(item.path)}</div>
           </div>
         </div>
-        <span class="rounded-full border px-3 py-2 text-sm font-bold ${tonePill(item.statusTone)}">${escapeHtml(item.status)}</span>
+        <span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${tonePill(item.statusTone)}">${escapeHtml(item.status)}</span>
       </div>
-      <p class="mt-4 text-lg leading-8 text-slate-700">${escapeHtml(item.summary)}</p>
-      <div class="mt-4 flex flex-wrap gap-2">
-        ${item.details.map((detail) => `<span class="rounded-full bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">${escapeHtml(detail)}</span>`).join('')}
+      <p class="mt-3 text-sm leading-relaxed text-gray-600">${escapeHtml(item.summary)}</p>
+      <div class="mt-3 flex flex-wrap gap-1.5">
+        ${item.details.map((detail) => `<span class="rounded-full bg-gray-50 border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-500">${escapeHtml(detail)}</span>`).join('')}
       </div>
     </article>
   `).join('');
@@ -419,50 +421,50 @@ function renderImplementationChecks() {
 
 function renderPipelineSummary() {
   els.pipelineSummary.innerHTML = pipelineSummary.map((item) => `
-    <article class="rounded-[28px] border p-5 shadow-panel ${item.accent}">
-      <div class="flex items-center gap-3">
-        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80 text-lg">
-          <i class="fa-solid ${item.icon}"></i>
+    <article class="rounded-xl border p-4 ${item.accent}">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/70 shadow-sm">
+          <i class="fa-solid ${item.icon} text-sm"></i>
         </div>
-        <h4 class="text-2xl font-black tracking-[-0.03em]">${escapeHtml(item.title)}</h4>
+        <h4 class="text-base font-semibold">${escapeHtml(item.title)}</h4>
       </div>
-      <p class="mt-4 text-lg leading-8">${escapeHtml(item.body)}</p>
+      <p class="mt-3 text-sm leading-relaxed">${escapeHtml(item.body)}</p>
     </article>
   `).join('');
 }
 
 function renderPipelineFlow() {
   els.pipelineFlow.innerHTML = pipelineSteps.map((item) => `
-    <article class="rounded-[30px] border border-slate-200 bg-white p-5 shadow-panel md:p-6">
-      <div class="grid gap-5 xl:grid-cols-[120px_minmax(0,1fr)_360px]">
-        <div class="flex flex-col items-start gap-3">
-          <div class="rounded-[24px] bg-slate-950 px-5 py-4 text-white">
-            <div class="text-xs tracking-[0.2em] text-slate-400">STEP</div>
-            <div class="mt-1 text-3xl font-black">${escapeHtml(item.step)}</div>
+    <article class="rounded-xl border border-gray-200 bg-white p-5 hover:shadow-md transition-shadow">
+      <div class="grid gap-5 xl:grid-cols-[80px_minmax(0,1fr)_320px]">
+        <div class="flex flex-col items-start gap-2">
+          <div class="rounded-lg bg-gray-900 px-3 py-2 text-white text-center min-w-[56px]">
+            <div class="text-xs text-gray-400 font-mono">STEP</div>
+            <div class="text-xl font-bold">${escapeHtml(item.step)}</div>
           </div>
-          <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-xl text-slate-900 ring-1 ring-slate-200">
-            <i class="fa-solid ${item.icon}"></i>
+          <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+            <i class="fa-solid ${item.icon} text-sm"></i>
           </div>
         </div>
         <div>
-          <div class="inline-flex rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-600">${escapeHtml(item.badge)}</div>
-          <h4 class="mt-4 text-3xl font-black tracking-[-0.04em] text-slate-900">${escapeHtml(item.title)}</h4>
-          <div class="mt-2 text-base font-medium text-slate-500">${escapeHtml(item.path)}</div>
-          <p class="mt-4 text-lg leading-8 text-slate-700">${escapeHtml(item.summary)}</p>
-          <div class="mt-5 grid gap-3 md:grid-cols-2">
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-              <div class="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">Input</div>
-              <div class="mt-3 text-lg leading-8 text-slate-900">${escapeHtml(item.input)}</div>
+          <span class="inline-flex rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500">${escapeHtml(item.badge)}</span>
+          <h4 class="mt-2 text-lg font-semibold text-gray-900">${escapeHtml(item.title)}</h4>
+          <div class="mt-0.5 text-xs font-mono text-gray-400">${escapeHtml(item.path)}</div>
+          <p class="mt-2 text-sm leading-relaxed text-gray-600">${escapeHtml(item.summary)}</p>
+          <div class="mt-3 grid gap-2 sm:grid-cols-2">
+            <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Input</div>
+              <div class="mt-1 text-sm text-gray-700">${escapeHtml(item.input)}</div>
             </div>
-            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-              <div class="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">Output</div>
-              <div class="mt-3 text-lg leading-8 text-slate-900">${escapeHtml(item.output)}</div>
+            <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Output</div>
+              <div class="mt-1 text-sm text-gray-700">${escapeHtml(item.output)}</div>
             </div>
           </div>
         </div>
-        <div class="overflow-hidden rounded-[26px] border border-slate-900 bg-slate-950">
-          <div class="border-b border-white/10 px-5 py-4 text-sm font-bold uppercase tracking-[0.18em] text-slate-400">Code Sketch</div>
-          <pre class="overflow-x-auto p-5 text-sm leading-7 text-slate-100"><code>${escapeHtml(item.code)}</code></pre>
+        <div class="overflow-hidden rounded-lg border border-gray-800 bg-gray-950">
+          <div class="border-b border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Code Sketch</div>
+          <pre class="overflow-x-auto p-4 text-xs leading-relaxed text-gray-200"><code>${escapeHtml(item.code)}</code></pre>
         </div>
       </div>
     </article>
@@ -471,19 +473,17 @@ function renderPipelineFlow() {
 
 function renderImplementationExamples() {
   els.implementationExamples.innerHTML = implementationExamples.map((item) => `
-    <article class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-panel">
-      <div class="border-b border-slate-200 bg-slate-50 px-5 py-5">
-        <div class="flex items-center gap-3">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
-            <i class="fa-solid ${item.icon}"></i>
-          </div>
-          <div>
-            <h4 class="text-2xl font-black tracking-[-0.03em] text-slate-900">${escapeHtml(item.title)}</h4>
-            <p class="mt-1 text-base leading-7 text-slate-600">${escapeHtml(item.caption)}</p>
-          </div>
+    <article class="overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-md transition-shadow">
+      <div class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 flex items-center gap-3">
+        <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-900 text-white shrink-0">
+          <i class="fa-solid ${item.icon} text-sm"></i>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold text-gray-900">${escapeHtml(item.title)}</h4>
+          <p class="text-xs text-gray-500">${escapeHtml(item.caption)}</p>
         </div>
       </div>
-      <pre class="overflow-x-auto p-5 text-sm leading-7 text-slate-800"><code>${escapeHtml(item.code)}</code></pre>
+      <pre class="overflow-x-auto p-4 text-xs leading-relaxed text-gray-800 bg-white"><code>${escapeHtml(item.code)}</code></pre>
     </article>
   `).join('');
 }
@@ -494,7 +494,7 @@ function bindEvents() {
   document.getElementById('openConfigDesktop').addEventListener('click', () => openPanel(els.configPanel));
   document.getElementById('openConfigHeader').addEventListener('click', () => openPanel(els.configPanel));
   document.getElementById('openQuickPrompt').addEventListener('click', () => openPanel(els.promptPanel));
-  document.getElementById('openQuickPromptCard').addEventListener('click', () => openPanel(els.promptPanel));
+  document.getElementById('openQuickPromptCard')?.addEventListener('click', () => openPanel(els.promptPanel));
   document.getElementById('openMobileSidebar').addEventListener('click', openMobileSidebar);
   document.getElementById('closeMobileSidebar').addEventListener('click', closeMobileSidebar);
 
@@ -529,6 +529,10 @@ function bindEvents() {
       sendMessage();
     }
   });
+  els.message.addEventListener('input', () => {
+    els.message.style.height = 'auto';
+    els.message.style.height = Math.min(els.message.scrollHeight, 140) + 'px';
+  });
 }
 
 function init() {
@@ -544,7 +548,7 @@ function init() {
   bindEvents();
   setScreen('chat');
 
-  addBubble('assistant', '안녕하세요! 학생의 흥미, 강점, 상담기록을 바탕으로 진로탐색을 도와드릴게요. 좌측 메뉴에서 다른 화면으로 이동할 수 있습니다.');
+  addBubble('assistant', '안녕하세요! 학생의 흥미, 강점, 상담기록을 바탕으로 진로탐색을 도와드릴게요.\n\n궁금한 내용을 입력하거나 우측 상단의 [빠른 질문] 버튼을 눌러 템플릿을 사용해 보세요.');
 }
 
 init();

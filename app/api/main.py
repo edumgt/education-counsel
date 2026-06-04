@@ -180,6 +180,18 @@ def run_chat(message: str, domain: Optional[str], top_k: int, history: List[Dict
         if collection_exists(candidate):
             used = candidate
 
+    if not collection_exists(used):
+        return ChatResponse(
+            answer=(
+                f"벡터 DB에 데이터가 없습니다 (컬렉션 '{used}' 미존재).\n\n"
+                "다음 명령으로 데이터를 먼저 인제스트하세요:\n"
+                "  python scripts/normalize.py --data-root ./DATA_ROOT --out-dir ./data\n"
+                "  python scripts/index_qdrant.py --docs ./data/documents.jsonl"
+            ),
+            citations=[],
+            used_collection=used,
+        )
+
     hits = search_chunks(used, qvec, top_k)
     citations = []
     for h in hits:

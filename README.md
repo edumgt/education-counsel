@@ -2,6 +2,9 @@
 
 # AI 기반 학생 진로탐색 상담 시스템 (Chatbot RAG)
 
+![](./docs/image.png)
+
+![alt text](./docs/image-01.png)
 
 
 이 저장소는 `DATA_ROOT`의 학생 기초정보/상담기록/전문가 라벨링 데이터를 기반으로, **백엔드(FastAPI) + 프론트엔드(Web) 모두 챗봇 중심**으로 동작하는 진로상담 시스템입니다.

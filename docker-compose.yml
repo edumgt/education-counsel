@@ -1,4 +1,18 @@
 services:
+  init:
+    build: ./app
+    command: sh /scripts/init.sh
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./DATA_ROOT:/DATA_ROOT:ro
+      - ./data:/data
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - EMBED_MODEL=intfloat/multilingual-e5-small
+    networks:
+      - shared-net
+    restart: "no"
+
   webapp:
     build: ./app
     ports:
@@ -7,21 +21,9 @@ services:
       - .env
     environment:
       - QDRANT_URL=http://qdrant:6333
-    networks:
-      - shared-net
-
-  indexer:
-    build: ./app
-    command: >
-      python /scripts/index_qdrant.py --docs /data/documents.jsonl
-    volumes:
-      - ./scripts:/scripts:ro
-      - ./data:/data:ro
-    environment:
-      - QDRANT_URL=http://qdrant:6333
-      - EMBED_MODEL=intfloat/multilingual-e5-small
-    profiles:
-      - index
+    depends_on:
+      init:
+        condition: service_completed_successfully
     networks:
       - shared-net
 
