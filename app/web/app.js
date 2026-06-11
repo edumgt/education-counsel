@@ -19,20 +19,27 @@ const els = {
   panelBackdrop: document.getElementById('panelBackdrop'),
   configPanel: document.getElementById('configPanel'),
   promptPanel: document.getElementById('promptPanel'),
+  assetChatLog: document.getElementById('assetChatLog'),
+  assetMessage: document.getElementById('assetMessage'),
+  assetSend: document.getElementById('assetSend'),
+  assetStatus: document.getElementById('assetStatus'),
 };
 
 const state = {
   history: [],
+  assetHistory: [],
   apiBase: localStorage.getItem('career.apiBase') || '',
   domain: localStorage.getItem('career.domain') || '',
   currentScreen: 'chat',
   activePanel: null,
+  assetInitialized: false,
 };
 
 const screens = Array.from(document.querySelectorAll('.screen-view'));
 
 const sidebarItems = [
   { id: 'chat', title: '학생 진로탐색 상담', desc: '대화와 citation 확인', icon: 'fa-comments', tone: 'sky' },
+  { id: 'asset-counsel', title: '자산운용 자격증 상담', desc: '자격증 취득 경로와 준비 전략', icon: 'fa-chart-line', tone: 'amber' },
   { id: 'implementation', title: '실제 구현 확인', desc: 'ingest 코드 위치와 상태', icon: 'fa-magnifying-glass-chart', tone: 'emerald' },
   { id: 'pipeline', title: '파이프라인 설명', desc: 'ingest와 pipeline 차이', icon: 'fa-diagram-project', tone: 'violet' },
   { id: 'flow', title: '구현 과정 예시', desc: '단계별 코드 스케치', icon: 'fa-code-branch', tone: 'amber' },
@@ -244,6 +251,12 @@ function setScreen(screenId) {
   els.screenTitle.textContent = current ? current.title : '학생 진로탐색 상담';
   renderSidebarMenus();
   closeMobileSidebar();
+
+  if (screenId === 'asset-counsel' && !state.assetInitialized) {
+    state.assetInitialized = true;
+    addAssetBubble('assistant', '안녕하세요! 자산운용 자격증 취득 전문 AI 상담사입니다.\n\n투자자산운용사, CFA, AFPK/CFP, FRM 등 자격증 취득 경로, 준비 방법, 커리어 전략을 안내드립니다.\n\n아래 빠른 질문을 선택하거나 직접 질문을 입력해 주세요.');
+    renderAssetQuickCards();
+  }
 }
 
 function openPanel(panel) {
@@ -377,10 +390,19 @@ function renderSidebarMenus() {
 }
 
 function renderQuickQuestions() {
-  els.quickQuestions.innerHTML = sampleQuestions.map((q, i) => `
-    <button class="quick-question w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-sm transition hover:border-copilot-200 hover:bg-copilot-50" data-question="${escapeHtml(q)}">
+  const isAsset = state.currentScreen === 'asset-counsel';
+  const questions = isAsset ? assetSampleQuestions : sampleQuestions;
+  const pillClass = isAsset
+    ? 'border-amber-200 bg-amber-50 hover:border-amber-400 hover:bg-amber-100'
+    : 'border-gray-200 bg-white hover:border-copilot-200 hover:bg-copilot-50';
+  const numClass = isAsset
+    ? 'bg-amber-100 text-amber-600'
+    : 'bg-copilot-100 text-copilot-600';
+
+  els.quickQuestions.innerHTML = questions.map((q, i) => `
+    <button class="quick-question w-full rounded-xl border ${pillClass} px-4 py-3 text-left text-sm transition" data-question="${escapeHtml(q)}">
       <div class="flex items-start gap-3">
-        <span class="mt-0.5 w-5 h-5 shrink-0 flex items-center justify-center rounded-full bg-copilot-100 text-copilot-600 text-xs font-bold">${i + 1}</span>
+        <span class="mt-0.5 w-5 h-5 shrink-0 flex items-center justify-center rounded-full ${numClass} text-xs font-bold">${i + 1}</span>
         <span class="leading-relaxed text-gray-700">${escapeHtml(q)}</span>
       </div>
     </button>
@@ -388,10 +410,17 @@ function renderQuickQuestions() {
 
   Array.from(document.querySelectorAll('.quick-question')).forEach((btn) => {
     btn.addEventListener('click', () => {
-      els.message.value = btn.getAttribute('data-question') || '';
-      setScreen('chat');
-      closePanel();
-      els.message.focus();
+      const q = btn.getAttribute('data-question') || '';
+      if (isAsset) {
+        els.assetMessage.value = q;
+        closePanel();
+        els.assetMessage.focus();
+      } else {
+        els.message.value = q;
+        setScreen('chat');
+        closePanel();
+        els.message.focus();
+      }
     });
   });
 }
@@ -488,13 +517,118 @@ function renderImplementationExamples() {
   `).join('');
 }
 
+const assetSampleQuestions = [
+  '투자자산운용사 시험 과목과 합격 기준을 알려주세요.',
+  'CFA Level 1을 처음 준비하는데 무엇부터 시작해야 할까요?',
+  '자산운용업계 취업을 위해 어떤 자격증 순서로 취득해야 하나요?',
+  'AFPK와 CFP의 차이점과 취득 순서를 알려주세요.',
+  '재무위험관리사와 국제 FRM 중 어떤 자격증이 더 유리한가요?',
+  '금융투자분석사 자격증 취득 난이도와 준비 전략을 알려주세요.',
+];
+
+function setAssetStatus(msg = '') {
+  if (!msg) {
+    els.assetStatus.classList.add('hidden');
+    return;
+  }
+  els.assetStatus.classList.remove('hidden');
+  const textEl = document.getElementById('assetStatusText');
+  if (textEl) textEl.textContent = msg;
+}
+
+function addAssetBubble(role, text) {
+  const isUser = role === 'user';
+  const wrap = document.createElement('div');
+  wrap.className = `flex gap-3 fade-in ${isUser ? 'justify-end' : 'justify-start'}`;
+
+  if (isUser) {
+    wrap.innerHTML = `
+      <div class="max-w-[78%] bubble-user bg-amber-500 px-4 py-3 text-sm leading-relaxed text-white shadow-sm">
+        <div class="whitespace-pre-wrap">${escapeHtml(text)}</div>
+      </div>`;
+  } else {
+    wrap.innerHTML = `
+      <div class="w-7 h-7 shrink-0 bg-amber-500 rounded-full flex items-center justify-center mt-0.5">
+        <i class="fa-solid fa-chart-line text-white text-xs"></i>
+      </div>
+      <div class="max-w-[78%] bubble-assistant border border-amber-100 bg-white px-4 py-3 text-sm leading-relaxed text-gray-900 shadow-sm">
+        <div class="whitespace-pre-wrap">${escapeHtml(text)}</div>
+      </div>`;
+  }
+  els.assetChatLog.appendChild(wrap);
+  els.assetChatLog.scrollTop = els.assetChatLog.scrollHeight;
+}
+
+function renderAssetQuickCards() {
+  const container = document.createElement('div');
+  container.id = 'assetQuickCards';
+  container.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2 my-2';
+  container.innerHTML = assetSampleQuestions.map((q) => `
+    <button class="asset-quick-card rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm transition hover:border-amber-400 hover:bg-amber-100" data-question="${escapeHtml(q)}">
+      <div class="flex items-start gap-2">
+        <i class="fa-solid fa-circle-question text-amber-400 mt-0.5 text-xs shrink-0"></i>
+        <span class="leading-relaxed text-gray-700">${escapeHtml(q)}</span>
+      </div>
+    </button>
+  `).join('');
+  els.assetChatLog.appendChild(container);
+  els.assetChatLog.scrollTop = els.assetChatLog.scrollHeight;
+
+  Array.from(container.querySelectorAll('.asset-quick-card')).forEach((btn) => {
+    btn.addEventListener('click', () => {
+      els.assetMessage.value = btn.getAttribute('data-question') || '';
+      container.remove();
+      els.assetMessage.focus();
+      sendAssetMessage();
+    });
+  });
+}
+
+async function sendAssetMessage() {
+  const message = (els.assetMessage.value || '').trim();
+  if (!message) return;
+
+  const quickCards = document.getElementById('assetQuickCards');
+  if (quickCards) quickCards.remove();
+
+  addAssetBubble('user', message);
+  state.assetHistory.push({ role: 'user', content: message });
+  els.assetMessage.value = '';
+  els.assetMessage.style.height = 'auto';
+  setAssetStatus('상담 답변 생성 중...');
+  els.assetSend.disabled = true;
+
+  try {
+    const res = await fetch(`${baseUrl()}/asset-counsel/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        history: state.assetHistory.slice(-8),
+      }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const answer = data.answer || '답변이 비어 있습니다.';
+    addAssetBubble('assistant', answer);
+    state.assetHistory.push({ role: 'assistant', content: answer });
+    setAssetStatus('');
+  } catch (e) {
+    setAssetStatus(`오류: ${e.message}`);
+    addAssetBubble('assistant', '요청 처리 중 오류가 발생했습니다. API 설정과 서버 상태를 확인해 주세요.');
+  } finally {
+    els.assetSend.disabled = false;
+  }
+}
+
 function bindEvents() {
   document.getElementById('newChatScreen').addEventListener('click', () => setScreen('chat'));
   document.getElementById('newChatScreenMobile').addEventListener('click', () => setScreen('chat'));
   document.getElementById('openConfigDesktop').addEventListener('click', () => openPanel(els.configPanel));
   document.getElementById('openConfigHeader').addEventListener('click', () => openPanel(els.configPanel));
-  document.getElementById('openQuickPrompt').addEventListener('click', () => openPanel(els.promptPanel));
-  document.getElementById('openQuickPromptCard')?.addEventListener('click', () => openPanel(els.promptPanel));
+  document.getElementById('openQuickPrompt').addEventListener('click', () => { renderQuickQuestions(); openPanel(els.promptPanel); });
+  document.getElementById('openQuickPromptCard')?.addEventListener('click', () => { renderQuickQuestions(); openPanel(els.promptPanel); });
   document.getElementById('openMobileSidebar').addEventListener('click', openMobileSidebar);
   document.getElementById('closeMobileSidebar').addEventListener('click', closeMobileSidebar);
 
@@ -532,6 +666,18 @@ function bindEvents() {
   els.message.addEventListener('input', () => {
     els.message.style.height = 'auto';
     els.message.style.height = Math.min(els.message.scrollHeight, 140) + 'px';
+  });
+
+  els.assetSend.addEventListener('click', sendAssetMessage);
+  els.assetMessage.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendAssetMessage();
+    }
+  });
+  els.assetMessage.addEventListener('input', () => {
+    els.assetMessage.style.height = 'auto';
+    els.assetMessage.style.height = Math.min(els.assetMessage.scrollHeight, 140) + 'px';
   });
 }
 
